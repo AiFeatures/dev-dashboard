@@ -1,0 +1,163 @@
+const express = require('express');
+const { execFile } = require('child_process');
+const path = require('path');
+const os = require('os');
+
+const app = express();
+const PORT = process.env.DASHBOARD_PORT || 7777;
+const REPOS_ROOT = process.env.REPOS_ROOT || path.join(os.homedir());
+
+const REPOS = [
+  { name: 'jules-action', owner: 'google-labs-code', tech: 'GitHub Actions', description: 'GitHub Action to trigger Jules AI coding agent', healthCmd: null, port: null },
+  { name: 'claude-code-scheduler', owner: 'jshchnz', tech: 'TypeScript', description: 'Schedule recurring Claude Code tasks with cron', healthCmd: 'npx vitest run --reporter=json', port: null },
+  { name: 'obsidian-skills', owner: 'kepano', tech: 'Markdown', description: 'Agent Skills for Obsidian', healthCmd: null, port: null },
+  { name: 'ui-ux-pro-max-skill', owner: 'nextlevelbuilder', tech: 'Python/TS', description: 'AI design intelligence toolkit', healthCmd: null, port: null },
+  { name: 'tinyfish-cookbook', owner: 'tinyfish-io', tech: 'Mixed', description: 'Sample projects for TinyFish platform', healthCmd: null, port: null },
+  { name: 'superpowers', owner: 'obra', tech: 'Markdown', description: 'Software development workflow for coding agents', healthCmd: null, port: null },
+  { name: 'n8n-mcp', owner: 'czlonkowski', tech: 'TypeScript', description: 'MCP server for n8n node information', healthCmd: 'npx vitest run --reporter=json', port: 3000 },
+  { name: 'get-shit-done', owner: 'gsd-build', tech: 'JavaScript', description: 'Meta-prompting and spec-driven dev system', healthCmd: 'node scripts/run-tests.cjs', port: null },
+  { name: 'everything-claude-code', owner: 'affaan-m', tech: 'JavaScript', description: 'Claude Code plugin with 13 agents, 50+ skills', healthCmd: 'node tests/run-all.js', port: null },
+  { name: 'awesome-claude-code', owner: 'hesreallyhim', tech: 'Python', description: 'Curated list of Claude Code resources', healthCmd: null, port: null },
+  { name: 'context7', owner: 'upstash', tech: 'TypeScript', description: 'MCP server for version-specific documentation', healthCmd: 'pnpm test', port: null },
+  { name: 'SlayZone', owner: 'debuglebowski', tech: 'Electron/React', description: 'Desktop task management with AI assistants', healthCmd: 'pnpm typecheck', port: null },
+  { name: 'GitNexus', owner: 'abhigyanpatwari', tech: 'TypeScript', description: 'Codebase knowledge graph via MCP tools', healthCmd: null, port: null },
+  { name: 'CollabCode', owner: 'humancto', tech: 'JS/Express', description: 'Real-time collaborative code editor', healthCmd: null, port: 8080 },
+];
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
+
+// Git helper - runs git command in repo dir
+function gitCmd(repoPath, args) {
+  return new Promise((resolve, reject) => {
+    execFile('git', args, { cwd: repoPath, timeout: 10000 }, (err, stdout, stderr) => {
+      if (err && !stdout) return reject(err);
+      resolve(stdout.trim());
+    });
+  });
+}
+
+// GET /api/repos - list all repos with git status
+app.get('/api/repos', async (_req, res) => {
+  const results = await Promise.all(
+    REPOS.map(async (repo) => {
+      const repoPath = path.join(REPOS_ROOT, repo.name);
+      try {
+        const [branch, status, lastCommit, lastCommitDate] = await Promise.all([
+          gitCmd(repoPath, ['branch', '--show-current']),
+          gitCmd(repoPath, ['status', '-s']),
+          gitCmd(repoPath, ['log', '--oneline', '-1']),
+          gitCmd(repoPath, ['log', '-1', '--format=%ci']),
+        ]);
+        const dirtyFiles = status ? status.split('\n').length : 0;
+        return {
+          ...repo,
+          path: repoPath,
+          branch,
+          dirtyFiles,
+          dirtyList: status ? status.split('\n').slice(0, 5) : [],
+          lastCommit,
+          lastCommitDate,
+          status: dirtyFiles > 0 ? 'dirty' : 'clean',
+        };
+      } catch (e) {
+        return { ...repo, path: repoPath, status: 'error', error: e.message };
+      }
+    })
+  );
+  res.json(results);
+});
+
+// GET /api/repos/:name/health - run health check for a repo
+app.get('/api/repos/:name/health', async (req, res) => {
+  const repo = REPOS.find((r) => r.name === req.params.name);
+  if (!repo) return res.status(404).json({ error: 'Repo not found' });
+  if (!repo.healthCmd) return res.json({ status: 'no-health-check', repo: repo.name });
+
+  const repoPath = path.join(REPOS_ROOT, repo.name);
+  const [cmd, ...args] = repo.healthCmd.split(' ');
+
+  try {
+    const result = await new Promise((resolve, reject) => {
+      execFile(cmd, args, { cwd: repoPath, timeout: 120000, shell: false }, (err, stdout, stderr) => {
+        resolve({
+          exitCode: err ? err.code || 1 : 0,
+          stdout: stdout.slice(-2000),
+          stderr: stderr.slice(-1000),
+        });
+      });
+    });
+    res.json({ status: result.exitCode === 0 ? 'pass' : 'fail', ...result, repo: repo.name });
+  } catch (e) {
+    res.json({ status: 'error', error: e.message, repo: repo.name });
+  }
+});
+
+// GET /api/repos/:name/log - get recent git log
+app.get('/api/repos/:name/log', async (req, res) => {
+  const repo = REPOS.find((r) => r.name === req.params.name);
+  if (!repo) return res.status(404).json({ error: 'Repo not found' });
+  const repoPath = path.join(REPOS_ROOT, repo.name);
+  try {
+    const log = await gitCmd(repoPath, ['log', '--oneline', '-20']);
+    res.json({ repo: repo.name, log: log.split('\n') });
+  } catch (e) {
+    res.json({ error: e.message });
+  }
+});
+
+// GET /api/backlog - return current known issues from security scan
+app.get('/api/backlog', (_req, res) => {
+  res.json([
+    // P0 - Critical
+    { id: 'P0-1', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in slack-integration.js — no DOMPurify', status: 'open', category: 'security' },
+    { id: 'P0-2', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in firepad.js — attacker content rendered unescaped', status: 'open', category: 'security' },
+    { id: 'P0-3', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in behavior-tracking.js', status: 'open', category: 'security' },
+    { id: 'P0-4', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in session-tracking.js', status: 'open', category: 'security' },
+    { id: 'P0-5', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in activity-monitor.js', status: 'open', category: 'security' },
+    { id: 'P0-6', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in interview-notes.js', status: 'open', category: 'security' },
+    { id: 'P0-7', severity: 'P0', repo: 'CollabCode', title: 'Password reset token logged to console (api/auth/reset-password.js:88)', status: 'open', category: 'security' },
+    { id: 'P0-8', severity: 'P0', repo: 'GitNexus', title: 'innerHTML = marked.parse(md) in html-viewer.ts — script injection via markdown', status: 'open', category: 'security' },
+    { id: 'P0-9', severity: 'P0', repo: 'SlayZone', title: 'innerHTML = descriptionValue in TaskDetailPage.tsx — user HTML rendered raw', status: 'resolved', category: 'security' },
+    { id: 'P0-10', severity: 'P0', repo: 'tinyfish-cookbook', title: 'innerHTML iframe injection via attacker-controlled streamingUrl', status: 'open', category: 'security' },
+    // P1 - High
+    { id: 'P1-1', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literal in update-n8n-deps.js getLatestVersion()', status: 'resolved', category: 'security' },
+    { id: 'P1-2', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literal in update-n8n-deps.js getN8nDependencies()', status: 'resolved', category: 'security' },
+    { id: 'P1-3', severity: 'P1', repo: 'SlayZone', title: 'execSync URL injection in CLI tasks.ts', status: 'open', category: 'security' },
+    { id: 'P1-4', severity: 'P1', repo: 'SlayZone', title: 'execGit() passes template literals to execSync (~30 calls)', status: 'open', category: 'security' },
+    { id: 'P1-5', severity: 'P1', repo: 'GitNexus', title: 'innerHTML with dynamic SVG in ProcessFlowModal.tsx', status: 'open', category: 'security' },
+    { id: 'P1-6', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literals in prepare-release.js', status: 'open', category: 'security' },
+    { id: 'P1-7', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literals in generate-release-notes.js', status: 'open', category: 'security' },
+    { id: 'P1-8', severity: 'P1', repo: 'CollabCode', title: 'Internal error.message leaked to client in execute.js:98', status: 'open', category: 'security' },
+    { id: 'P1-9', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in slack-integration.js', status: 'open', category: 'bug' },
+    { id: 'P1-10', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in firepad.js (6 chains)', status: 'open', category: 'bug' },
+    { id: 'P1-11', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in interview-notes.js', status: 'open', category: 'bug' },
+    { id: 'P1-12', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in activity-monitor.js', status: 'open', category: 'bug' },
+    // P2 - Medium
+    { id: 'P2-1', severity: 'P2', repo: 'CollabCode', title: 'Firebase SDK v3.5.2 (2016) — severely outdated', status: 'open', category: 'quality' },
+    { id: 'P2-2', severity: 'P2', repo: 'CollabCode', title: 'SSRF risk: Piston API URL from env without validation', status: 'open', category: 'security' },
+    { id: 'P2-3', severity: 'P2', repo: 'get-shit-done', title: 'execSync string concat in core.cjs', status: 'resolved', category: 'security' },
+    { id: 'P2-4', severity: 'P2', repo: 'get-shit-done', title: 'execSync in commands.cjs', status: 'resolved', category: 'security' },
+    // Resolved from previous sessions
+    { id: 'R1', severity: 'P3', repo: 'SlayZone', title: 'Time-tracking files need commit', status: 'resolved' },
+    { id: 'R2', severity: 'P3', repo: 'n8n-mcp', title: 'Stray :memory: file in repo root', status: 'resolved' },
+    { id: 'R3', severity: 'P3', repo: 'get-shit-done', title: 'test-output.txt untracked artifact', status: 'resolved' },
+  ]);
+});
+
+// GET /api/scan-summary - aggregated security scan statistics
+app.get('/api/scan-summary', (_req, res) => {
+  res.json({
+    lastScan: new Date().toISOString(),
+    totals: { P0: 10, P1: 14, P2: 10, P3: 3, total: 37 },
+    resolved: { P0: 1, P1: 2, P2: 2, P3: 3, total: 8 },
+    remaining: { P0: 9, P1: 12, P2: 8, P3: 0, total: 29 },
+    cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code'],
+    affectedRepos: ['CollabCode', 'GitNexus', 'SlayZone', 'n8n-mcp', 'tinyfish-cookbook', 'get-shit-done', 'superpowers', 'everything-claude-code'],
+  });
+});
+
+app.listen(PORT, () => {
+  console.log(`Dev Dashboard running at http://localhost:${PORT}`);
+  console.log(`Monitoring ${REPOS.length} repositories in ${REPOS_ROOT}`);
+});

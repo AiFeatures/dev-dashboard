@@ -1,0 +1,60 @@
+# Dev Dashboard — docker-compose.yml
+# Runs the unified dashboard + monitored services in a single stack.
+#
+# Usage:
+#   docker compose up -d
+#   open http://localhost:7777
+#
+# All 14 repos are bind-mounted read-only from the host.
+# Services that can run as servers (n8n-mcp, CollabCode) are included.
+
+services:
+  dashboard:
+    build: .
+    ports:
+      - "7777:7777"
+    volumes:
+      # Mount all repos read-only for git status / health checks
+      - ${HOME}/jules-action:/repos/jules-action:ro
+      - ${HOME}/claude-code-scheduler:/repos/claude-code-scheduler:ro
+      - ${HOME}/obsidian-skills:/repos/obsidian-skills:ro
+      - ${HOME}/ui-ux-pro-max-skill:/repos/ui-ux-pro-max-skill:ro
+      - ${HOME}/tinyfish-cookbook:/repos/tinyfish-cookbook:ro
+      - ${HOME}/superpowers:/repos/superpowers:ro
+      - ${HOME}/n8n-mcp:/repos/n8n-mcp:ro
+      - ${HOME}/get-shit-done:/repos/get-shit-done:ro
+      - ${HOME}/everything-claude-code:/repos/everything-claude-code:ro
+      - ${HOME}/awesome-claude-code:/repos/awesome-claude-code:ro
+      - ${HOME}/context7:/repos/context7:ro
+      - ${HOME}/SlayZone:/repos/SlayZone:ro
+      - ${HOME}/GitNexus:/repos/GitNexus:ro
+      - ${HOME}/CollabCode:/repos/CollabCode:ro
+    environment:
+      - REPOS_ROOT=/repos
+      - DASHBOARD_PORT=7777
+    restart: unless-stopped
+    depends_on:
+      - n8n-mcp
+
+  n8n-mcp:
+    build:
+      context: ${HOME}/n8n-mcp
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    restart: unless-stopped
+
+  collabcode:
+    build:
+      context: ${HOME}/CollabCode
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+    restart: unless-stopped
+    profiles:
+      - full  # Only starts with: docker compose --profile full up

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dev Dashboard — 14 Repos</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-dim: #8b949e; --accent: #58a6ff;
+    --green: #3fb950; --red: #f85149; --yellow: #d29922; --orange: #db6d28;
+    --purple: #bc8cff;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+
+  .header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header .stats { margin-left: auto; display: flex; gap: 16px; font-size: 13px; color: var(--text-dim); }
+  .header .stat-val { color: var(--text); font-weight: 600; font-size: 15px; }
+
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 32px; }
+  .tab { padding: 10px 16px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; font-size: 14px; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+
+  .content { padding: 24px 32px; }
+
+  /* Scan Summary Banner */
+  .scan-banner { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .scan-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 12px 20px; min-width: 120px; text-align: center;
+  }
+  .scan-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-dim); margin-bottom: 4px; }
+  .scan-card .value { font-size: 24px; font-weight: 700; }
+  .scan-card.p0 .value { color: var(--red); }
+  .scan-card.p1 .value { color: var(--orange); }
+  .scan-card.p2 .value { color: var(--yellow); }
+  .scan-card.resolved .value { color: var(--green); }
+  .scan-card.total .value { color: var(--text); }
+
+  /* Filter bar */
+  .filter-bar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .filter-btn {
+    padding: 4px 12px; border-radius: 16px; border: 1px solid var(--border);
+    background: transparent; color: var(--text-dim); cursor: pointer; font-size: 12px;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active { background: var(--accent); color: #0d1117; border-color: var(--accent); font-weight: 600; }
+
+  /* Repo Grid */
+  .repo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .repo-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; transition: border-color 0.15s;
+  }
+  .repo-card:hover { border-color: var(--accent); }
+  .repo-card .name { font-size: 16px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .repo-card .desc { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; line-height: 1.4; }
+  .repo-card .meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 12px; font-size: 11px; font-weight: 500;
+  }
+  .badge-tech { background: #1f2937; color: var(--purple); border: 1px solid #374151; }
+  .badge-clean { background: #0d2818; color: var(--green); border: 1px solid #1a4731; }
+  .badge-dirty { background: #3d1a00; color: var(--orange); border: 1px solid #5c2800; }
+  .badge-branch { background: #1c2333; color: var(--accent); border: 1px solid #2d3748; }
+  .badge-port { background: #2d1b4e; color: var(--purple); border: 1px solid #4a2d7a; }
+  .badge-issues { background: #3d1200; color: var(--red); border: 1px solid #5c1a00; }
+
+  .repo-card .commit { font-size: 12px; color: var(--text-dim); margin-top: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .repo-card .actions { margin-top: 12px; display: flex; gap: 8px; }
+  .btn {
+    padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--text-dim); cursor: pointer; font-size: 12px;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--text); }
+  .btn.running { border-color: var(--yellow); color: var(--yellow); cursor: wait; }
+  .btn.pass { border-color: var(--green); color: var(--green); }
+  .btn.fail { border-color: var(--red); color: var(--red); }
+
+  /* Backlog */
+  .backlog-table { width: 100%; border-collapse: collapse; }
+  .backlog-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  .backlog-table td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+  .sev-P0 { color: var(--red); font-weight: 600; }
+  .sev-P1 { color: var(--orange); font-weight: 600; }
+  .sev-P2 { color: var(--yellow); font-weight: 600; }
+  .sev-P3 { color: var(--text-dim); }
+  .status-open { color: var(--red); }
+  .status-resolved { color: var(--green); }
+  .category-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .cat-security { background: #3d120050; color: var(--red); border: 1px solid #5c1a0060; }
+  .cat-bug { background: #3d1a0050; color: var(--orange); border: 1px solid #5c280060; }
+  .cat-quality { background: #2d1b4e50; color: var(--purple); border: 1px solid #4a2d7a60; }
+
+  /* Detail panel */
+  .detail-overlay {
+    position: fixed; top: 0; right: 0; bottom: 0; width: 480px;
+    background: var(--surface); border-left: 1px solid var(--border);
+    transform: translateX(100%); transition: transform 0.2s; z-index: 100;
+    overflow-y: auto; padding: 24px;
+  }
+  .detail-overlay.open { transform: translateX(0); }
+  .detail-overlay h2 { font-size: 18px; margin-bottom: 16px; }
+  .detail-overlay .close { position: absolute; top: 16px; right: 16px; cursor: pointer; color: var(--text-dim); font-size: 20px; }
+  .detail-overlay .log-entry { font-size: 12px; font-family: 'SF Mono', monospace; color: var(--text-dim); padding: 4px 0; border-bottom: 1px solid var(--border); }
+
+  .loading { text-align: center; padding: 48px; color: var(--text-dim); }
+
+  @media (max-width: 768px) {
+    .repo-grid { grid-template-columns: 1fr; }
+    .content { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ Dev Dashboard</h1>
+  <div class="stats">
+    <div><span class="stat-val" id="totalRepos">14</span> repos</div>
+    <div><span class="stat-val" id="cleanCount">—</span> clean</div>
+    <div><span class="stat-val" id="dirtyCount">—</span> dirty</div>
+    <div><span class="stat-val" id="issueCount">—</span> issues</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="repos">Repositories</div>
+  <div class="tab" data-tab="scan">Security Scan</div>
+  <div class="tab" data-tab="backlog">Backlog</div>
+</div>
+
+<div class="content" id="content">
+  <div class="loading">Loading repositories...</div>
+</div>
+
+<div class="detail-overlay" id="detailPanel">
+  <span class="close" onclick="closeDetail()">&times;</span>
+  <h2 id="detailTitle"></h2>
+  <div id="detailContent"></div>
+</div>
+
+<script>
+let repos = [];
+let backlog = [];
+let scanSummary = null;
+let activeTab = 'repos';
+let backlogFilter = 'all'; // all, open, resolved, P0, P1, P2, P3
+
+// Tab switching
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeTab = tab.dataset.tab;
+    render();
+  });
+});
+
+async function fetchRepos() {
+  try {
+    const res = await fetch('/api/repos');
+    repos = await res.json();
+    updateStats();
+    if (activeTab === 'repos') render();
+  } catch (e) {
+    document.getElementById('content').innerHTML = `<div class="loading">Error loading repos: ${escHtml(e.message)}</div>`;
+  }
+}
+
+async function fetchBacklog() {
+  try {
+    const res = await fetch('/api/backlog');
+    backlog = await res.json();
+    document.getElementById('issueCount').textContent = backlog.filter(b => b.status === 'open').length;
+  } catch (e) { /* ignore */ }
+}
+
+async function fetchScanSummary() {
+  try {
+    const res = await fetch('/api/scan-summary');
+    scanSummary = await res.json();
+  } catch (e) { /* ignore */ }
+}
+
+function updateStats() {
+  const clean = repos.filter(r => r.status === 'clean').length;
+  const dirty = repos.filter(r => r.status === 'dirty').length;
+  document.getElementById('cleanCount').textContent = clean;
+  document.getElementById('dirtyCount').textContent = dirty;
+}
+
+function getRepoIssueCount(repoName) {
+  return backlog.filter(b => b.repo === repoName && b.status === 'open').length;
+}
+
+function render() {
+  const content = document.getElementById('content');
+  if (activeTab === 'repos') {
+    content.innerHTML = `<div class="repo-grid">${repos.map(renderCard).join('')}</div>`;
+  } else if (activeTab === 'scan') {
+    content.innerHTML = renderScan();
+  } else if (activeTab === 'backlog') {
+    content.innerHTML = renderBacklog();
+  }
+}
+
+function renderCard(repo) {
+  const statusBadge = repo.status === 'clean'
+    ? '<span class="badge badge-clean">● clean</span>'
+    : repo.status === 'dirty'
+    ? `<span class="badge badge-dirty">● ${repo.dirtyFiles} dirty</span>`
+    : '<span class="badge badge-dirty">● error</span>';
+
+  const issueCount = getRepoIssueCount(repo.name);
+  const issueBadge = issueCount > 0
+    ? `<span class="badge badge-issues">⚠ ${issueCount} issues</span>`
+    : '';
+
+  const portBadge = repo.port ? `<span class="badge badge-port">:${repo.port}</span>` : '';
+  const healthBtn = repo.healthCmd
+    ? `<button class="btn" onclick="runHealth('${escHtml(repo.name)}', this)">Run Health</button>`
+    : '';
+
+  return `
+    <div class="repo-card">
+      <div class="name">${escHtml(repo.name)}</div>
+      <div class="desc">${escHtml(repo.description)}</div>
+      <div class="meta">
+        <span class="badge badge-tech">${escHtml(repo.tech)}</span>
+        <span class="badge badge-branch">⎇ ${escHtml(repo.branch || '—')}</span>
+        ${statusBadge}
+        ${issueBadge}
+        ${portBadge}
+      </div>
+      <div class="commit">${escHtml(repo.lastCommit || '')}</div>
+      <div class="actions">
+        <button class="btn" onclick="showLog('${escHtml(repo.name)}')">Log</button>
+        ${healthBtn}
+        <button class="btn" onclick="window.open('https://github.com/${escHtml(repo.owner)}/${escHtml(repo.name)}')">GitHub</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderScan() {
+  if (!scanSummary) return '<div class="loading">Loading scan data...</div>';
+  const s = scanSummary;
+  return `
+    <div class="scan-banner">
+      <div class="scan-card p0"><div class="label">P0 Critical</div><div class="value">${s.remaining.P0}</div></div>
+      <div class="scan-card p1"><div class="label">P1 High</div><div class="value">${s.remaining.P1}</div></div>
+      <div class="scan-card p2"><div class="label">P2 Medium</div><div class="value">${s.remaining.P2}</div></div>
+      <div class="scan-card resolved"><div class="label">Resolved</div><div class="value">${s.resolved.total}</div></div>
+      <div class="scan-card total"><div class="label">Total Found</div><div class="value">${s.totals.total}</div></div>
+    </div>
+    <h3 style="margin-bottom:12px;font-size:14px;color:var(--text-dim)">Clean Repos (${s.cleanRepos.length})</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      ${s.cleanRepos.map(r => `<span class="badge badge-clean">${escHtml(r)}</span>`).join('')}
+    </div>
+    <h3 style="margin-bottom:12px;font-size:14px;color:var(--text-dim)">Affected Repos (${s.affectedRepos.length})</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">
+      ${s.affectedRepos.map(r => {
+        const count = getRepoIssueCount(r);
+        return `<span class="badge badge-issues">${escHtml(r)} (${count})</span>`;
+      }).join('')}
+    </div>
+    <h3 style="margin-bottom:12px;font-size:14px;color:var(--text-dim)">All Findings</h3>
+    ${renderBacklogTable(backlog)}
+  `;
+}
+
+function renderBacklog() {
+  const filtered = filterBacklog(backlog);
+  return `
+    <div class="filter-bar">
+      <span style="font-size:12px;color:var(--text-dim);margin-right:4px">Filter:</span>
+      ${['all','open','resolved','P0','P1','P2','P3'].map(f =>
+        `<button class="filter-btn ${backlogFilter===f?'active':''}" onclick="setFilter('${f}')">${f}</button>`
+      ).join('')}
+      <span style="margin-left:auto;font-size:12px;color:var(--text-dim)">${filtered.length} items</span>
+    </div>
+    ${renderBacklogTable(filtered)}
+  `;
+}
+
+function filterBacklog(items) {
+  if (backlogFilter === 'all') return items;
+  if (backlogFilter === 'open' || backlogFilter === 'resolved') return items.filter(b => b.status === backlogFilter);
+  return items.filter(b => b.severity === backlogFilter);
+}
+
+function setFilter(f) {
+  backlogFilter = f;
+  render();
+}
+
+function renderBacklogTable(items) {
+  return `
+    <table class="backlog-table">
+      <thead><tr><th>ID</th><th>Sev</th><th>Cat</th><th>Repo</th><th>Issue</th><th>Status</th></tr></thead>
+      <tbody>
+        ${items.map(b => {
+          const catClass = b.category === 'security' ? 'cat-security' : b.category === 'bug' ? 'cat-bug' : 'cat-quality';
+          return `
+          <tr>
+            <td>${escHtml(b.id)}</td>
+            <td class="sev-${escHtml(b.severity)}">${escHtml(b.severity)}</td>
+            <td><span class="category-badge ${catClass}">${escHtml(b.category || '—')}</span></td>
+            <td>${escHtml(b.repo)}</td>
+            <td>${escHtml(b.title)}</td>
+            <td class="status-${escHtml(b.status)}">${escHtml(b.status)}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+async function runHealth(name, btn) {
+  btn.className = 'btn running';
+  btn.textContent = 'Running...';
+  try {
+    const res = await fetch(`/api/repos/${encodeURIComponent(name)}/health`);
+    const data = await res.json();
+    btn.className = `btn ${data.status === 'pass' ? 'pass' : 'fail'}`;
+    btn.textContent = data.status === 'pass' ? '✓ Pass' : '✗ Fail';
+    if (data.status !== 'pass') {
+      showDetail(name, `<h3>Health Check — ${escHtml(data.status)}</h3><pre style="white-space:pre-wrap;font-size:12px;color:var(--text-dim)">${escHtml(data.stdout || data.error || '')}</pre>`);
+    }
+  } catch (e) {
+    btn.className = 'btn fail';
+    btn.textContent = '✗ Error';
+  }
+}
+
+async function showLog(name) {
+  const panel = document.getElementById('detailPanel');
+  document.getElementById('detailTitle').textContent = name + ' — Git Log';
+  document.getElementById('detailContent').innerHTML = '<div class="loading">Loading...</div>';
+  panel.classList.add('open');
+  try {
+    const res = await fetch(`/api/repos/${encodeURIComponent(name)}/log`);
+    const data = await res.json();
+    document.getElementById('detailContent').innerHTML = (data.log || [])
+      .map(l => `<div class="log-entry">${escHtml(l)}</div>`).join('');
+  } catch (e) {
+    document.getElementById('detailContent').innerHTML = `Error: ${escHtml(e.message)}`;
+  }
+}
+
+function showDetail(title, html) {
+  document.getElementById('detailTitle').textContent = title;
+  document.getElementById('detailContent').innerHTML = html;
+  document.getElementById('detailPanel').classList.add('open');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('open');
+}
+
+function escHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// Init
+fetchRepos();
+fetchBacklog();
+fetchScanSummary();
+// Auto-refresh every 30s
+setInterval(() => { fetchRepos(); fetchBacklog(); fetchScanSummary(); }, 30000);
+</script>
+</body>
+</html>

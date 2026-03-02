@@ -1,0 +1,14 @@
+{
+  "name": "dev-dashboard",
+  "version": "1.0.0",
+  "description": "Unified dashboard for managing 14 development repositories",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "health": "node scripts/health-check.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}
