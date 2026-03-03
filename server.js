@@ -174,6 +174,10 @@ app.get('/api/backlog', (_req, res) => {
     // Cycle 7 - Auth security hardening, Dockerfile hardening
     { id: 'Q-24', severity: 'P1', repo: 'CollabCode', title: 'Auth security: removed credential logging, crypto session IDs, guarded hash log', status: 'resolved', category: 'security' },
     { id: 'Q-25', severity: 'P2', repo: 'context7', title: 'Dockerfile hardening: pinned node:22-alpine, non-root user, HEALTHCHECK, .dockerignore', status: 'resolved', category: 'quality' },
+    // Cycle 8 - CORS allowlist, JWT algorithm enforcement, security headers
+    { id: 'Q-26', severity: 'P1', repo: 'CollabCode', title: 'CORS upgraded from origin reflection to ALLOWED_ORIGINS env var allowlist (9 endpoints)', status: 'resolved', category: 'security' },
+    { id: 'Q-27', severity: 'P2', repo: 'CollabCode', title: 'JWT verify() explicit algorithms: [HS256] enforcement (3 calls)', status: 'resolved', category: 'security' },
+    { id: 'Q-28', severity: 'P2', repo: 'CollabCode', title: 'Security headers added to all API endpoints (shared _helpers/security.js)', status: 'resolved', category: 'security' },
   ]);
 });
 
@@ -181,8 +185,8 @@ app.get('/api/backlog', (_req, res) => {
 app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
-    totals: { P0: 10, P1: 17, P2: 12, P3: 16, total: 55 },
-    resolved: { P0: 10, P1: 17, P2: 11, P3: 16, total: 54 },
+    totals: { P0: 10, P1: 18, P2: 14, P3: 16, total: 58 },
+    resolved: { P0: 10, P1: 18, P2: 13, P3: 16, total: 57 },
     remaining: { P0: 0, P1: 0, P2: 1, P3: 0, total: 1 },
     openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated'],
     cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code', 'SlayZone', 'GitNexus', 'n8n-mcp', 'tinyfish-cookbook', 'superpowers', 'get-shit-done'],
