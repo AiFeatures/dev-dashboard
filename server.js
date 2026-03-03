@@ -110,25 +110,26 @@ app.get('/api/repos/:name/log', async (req, res) => {
 app.get('/api/backlog', (_req, res) => {
   res.json([
     // P0 - Critical
-    { id: 'P0-1', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in slack-integration.js — no DOMPurify', status: 'open', category: 'security' },
-    { id: 'P0-2', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in firepad.js — attacker content rendered unescaped', status: 'open', category: 'security' },
-    { id: 'P0-3', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in behavior-tracking.js', status: 'open', category: 'security' },
-    { id: 'P0-4', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in session-tracking.js', status: 'open', category: 'security' },
-    { id: 'P0-5', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in activity-monitor.js', status: 'open', category: 'security' },
-    { id: 'P0-6', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in interview-notes.js', status: 'open', category: 'security' },
-    { id: 'P0-7', severity: 'P0', repo: 'CollabCode', title: 'Password reset token logged to console (api/auth/reset-password.js:88)', status: 'open', category: 'security' },
-    { id: 'P0-8', severity: 'P0', repo: 'GitNexus', title: 'innerHTML = marked.parse(md) in html-viewer.ts — script injection via markdown', status: 'open', category: 'security' },
-    { id: 'P0-9', severity: 'P0', repo: 'SlayZone', title: 'innerHTML = descriptionValue in TaskDetailPage.tsx — user HTML rendered raw', status: 'resolved', category: 'security' },
-    { id: 'P0-10', severity: 'P0', repo: 'tinyfish-cookbook', title: 'innerHTML iframe injection via attacker-controlled streamingUrl', status: 'open', category: 'security' },
-    // P1 - High
-    { id: 'P1-1', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literal in update-n8n-deps.js getLatestVersion()', status: 'resolved', category: 'security' },
-    { id: 'P1-2', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literal in update-n8n-deps.js getN8nDependencies()', status: 'resolved', category: 'security' },
-    { id: 'P1-3', severity: 'P1', repo: 'SlayZone', title: 'execSync URL injection in CLI tasks.ts', status: 'open', category: 'security' },
-    { id: 'P1-4', severity: 'P1', repo: 'SlayZone', title: 'execGit() passes template literals to execSync (~30 calls)', status: 'open', category: 'security' },
-    { id: 'P1-5', severity: 'P1', repo: 'GitNexus', title: 'innerHTML with dynamic SVG in ProcessFlowModal.tsx', status: 'open', category: 'security' },
-    { id: 'P1-6', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literals in prepare-release.js', status: 'open', category: 'security' },
-    { id: 'P1-7', severity: 'P1', repo: 'n8n-mcp', title: 'execSync template literals in generate-release-notes.js', status: 'open', category: 'security' },
-    { id: 'P1-8', severity: 'P1', repo: 'CollabCode', title: 'Internal error.message leaked to client in execute.js:98', status: 'open', category: 'security' },
+    // P0 - Critical (ALL RESOLVED in Cycle 1)
+    { id: 'P0-1', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in slack-integration.js — escapeHTML + DOM API', status: 'resolved', category: 'security' },
+    { id: 'P0-2', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in firepad.js — escapeHTML + DOM API', status: 'resolved', category: 'security' },
+    { id: 'P0-3', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in behavior-tracking.js — escapeHTML + createElement', status: 'resolved', category: 'security' },
+    { id: 'P0-4', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in session-tracking.js — escapeHTML applied', status: 'resolved', category: 'security' },
+    { id: 'P0-5', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in activity-monitor.js — escapeHTML + Number coercion', status: 'resolved', category: 'security' },
+    { id: 'P0-6', severity: 'P0', repo: 'CollabCode', title: 'innerHTML XSS in interview-notes.js — analyzed: static HTML only', status: 'resolved', category: 'security' },
+    { id: 'P0-7', severity: 'P0', repo: 'CollabCode', title: 'Password reset token removed from console.log', status: 'resolved', category: 'security' },
+    { id: 'P0-8', severity: 'P0', repo: 'GitNexus', title: 'marked.parse(md) sanitized with DOMPurify CDN v3.2.4', status: 'resolved', category: 'security' },
+    { id: 'P0-9', severity: 'P0', repo: 'SlayZone', title: 'innerHTML → DOMParser().parseFromString in TaskDetailPage.tsx', status: 'resolved', category: 'security' },
+    { id: 'P0-10', severity: 'P0', repo: 'tinyfish-cookbook', title: 'iframe injection → URL validation + createElement', status: 'resolved', category: 'security' },
+    // P1 - High (critical items resolved, false positives identified)
+    { id: 'P1-1', severity: 'P1', repo: 'n8n-mcp', title: 'execSync → execFileSync in update-n8n-deps.js getLatestVersion()', status: 'resolved', category: 'security' },
+    { id: 'P1-2', severity: 'P1', repo: 'n8n-mcp', title: 'execSync → execFileSync in update-n8n-deps.js getN8nDependencies()', status: 'resolved', category: 'security' },
+    { id: 'P1-3', severity: 'P1', repo: 'SlayZone', title: 'execSync → execFileSync with platform-specific args in tasks.ts', status: 'resolved', category: 'security' },
+    { id: 'P1-4', severity: 'P1', repo: 'SlayZone', title: 'execGit() uses hardcoded commands, spawnGit for user input — false positive', status: 'resolved', category: 'security' },
+    { id: 'P1-5', severity: 'P1', repo: 'GitNexus', title: 'Mermaid 11.12+ has built-in SVG sanitization — false positive', status: 'resolved', category: 'security' },
+    { id: 'P1-6', severity: 'P1', repo: 'n8n-mcp', title: 'prepare-release.js all hardcoded commands — false positive', status: 'resolved', category: 'security' },
+    { id: 'P1-7', severity: 'P1', repo: 'n8n-mcp', title: 'execSync → execFileSync + isValidGitRef in generate-release-notes.js', status: 'resolved', category: 'security' },
+    { id: 'P1-8', severity: 'P1', repo: 'CollabCode', title: 'error.message removed from 500 response in execute.js', status: 'resolved', category: 'security' },
     { id: 'P1-9', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in slack-integration.js', status: 'open', category: 'bug' },
     { id: 'P1-10', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in firepad.js (6 chains)', status: 'open', category: 'bug' },
     { id: 'P1-11', severity: 'P1', repo: 'CollabCode', title: 'Unhandled promise rejections in interview-notes.js', status: 'open', category: 'bug' },
@@ -138,7 +139,7 @@ app.get('/api/backlog', (_req, res) => {
     { id: 'P2-2', severity: 'P2', repo: 'CollabCode', title: 'SSRF risk: Piston API URL from env without validation', status: 'open', category: 'security' },
     { id: 'P2-3', severity: 'P2', repo: 'get-shit-done', title: 'execSync string concat in core.cjs', status: 'resolved', category: 'security' },
     { id: 'P2-4', severity: 'P2', repo: 'get-shit-done', title: 'execSync in commands.cjs', status: 'resolved', category: 'security' },
-    // Resolved from previous sessions
+    // P3 - Low (resolved from previous sessions)
     { id: 'R1', severity: 'P3', repo: 'SlayZone', title: 'Time-tracking files need commit', status: 'resolved' },
     { id: 'R2', severity: 'P3', repo: 'n8n-mcp', title: 'Stray :memory: file in repo root', status: 'resolved' },
     { id: 'R3', severity: 'P3', repo: 'get-shit-done', title: 'test-output.txt untracked artifact', status: 'resolved' },
@@ -149,11 +150,11 @@ app.get('/api/backlog', (_req, res) => {
 app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
-    totals: { P0: 10, P1: 14, P2: 10, P3: 3, total: 37 },
-    resolved: { P0: 1, P1: 2, P2: 2, P3: 3, total: 8 },
-    remaining: { P0: 9, P1: 12, P2: 8, P3: 0, total: 29 },
-    cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code'],
-    affectedRepos: ['CollabCode', 'GitNexus', 'SlayZone', 'n8n-mcp', 'tinyfish-cookbook', 'get-shit-done', 'superpowers', 'everything-claude-code'],
+    totals: { P0: 10, P1: 12, P2: 4, P3: 3, total: 29 },
+    resolved: { P0: 10, P1: 8, P2: 2, P3: 3, total: 23 },
+    remaining: { P0: 0, P1: 4, P2: 2, P3: 0, total: 6 },
+    cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code', 'SlayZone', 'GitNexus', 'n8n-mcp', 'tinyfish-cookbook'],
+    affectedRepos: ['CollabCode'],
   });
 });
 
