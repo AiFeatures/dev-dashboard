@@ -237,6 +237,10 @@ app.get('/api/backlog', (_req, res) => {
     { id: 'Q-82', severity: 'P3', repo: 'n8n-mcp', title: 'Silent catch on node instantiation failures ×3 — added logger.debug messages', status: 'resolved', category: 'quality' },
     { id: 'Q-83', severity: 'P3', repo: 'everything-claude-code', title: 'Silent catch blocks in claw.js swallow non-ENOENT errors — added targeted error handling', status: 'resolved', category: 'quality' },
     { id: 'Q-84', severity: 'P3', repo: 'everything-claude-code', title: 'Silent catch in utils.js swallows non-permission errors — added targeted error handling', status: 'resolved', category: 'quality' },
+    { id: 'Q-85', severity: 'P3', repo: 'n8n-mcp', title: 'Unclosed ReadStream on upload error path — added try/finally with file.destroy()', status: 'resolved', category: 'quality' },
+    { id: 'Q-86', severity: 'P3', repo: 'n8n-mcp', title: 'Unsafe string concatenation for healthz URL — replaced with URL constructor', status: 'resolved', category: 'quality' },
+    { id: 'Q-87', severity: 'P3', repo: 'CollabCode', title: 'Unbounded suspiciousPatterns array growth — capped at 100 entries', status: 'resolved', category: 'quality' },
+    { id: 'Q-88', severity: 'P3', repo: 'CollabCode', title: 'setInterval calls without cleanup handles — stored handles and added stopActivityMonitor()', status: 'resolved', category: 'quality' },
   ]);
 });
 
@@ -244,8 +248,8 @@ app.get('/api/backlog', (_req, res) => {
 app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
-    totals: { P0: 11, P1: 22, P2: 32, P3: 49, total: 114 },
-    resolved: { P0: 11, P1: 21, P2: 30, P3: 41, total: 103 },
+    totals: { P0: 11, P1: 22, P2: 32, P3: 53, total: 118 },
+    resolved: { P0: 11, P1: 21, P2: 30, P3: 45, total: 107 },
     remaining: { P0: 0, P1: 1, P2: 2, P3: 8, total: 11 },
     openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated', 'Q-30: CollabCode Firebase Realtime DB rules world-writable', 'Q-40: SlayZone .then() chains without .catch()', 'Q-41: SlayZone buttons without aria-label', 'Q-42: n8n-mcp magic scoring numbers', 'Q-44: superpowers execSync string-form', 'Q-49: GitNexus eval-server no body limit (localhost)', 'Q-50: get-shit-done RegExp from config', 'Q-52: SlayZone TOCTOU symlink ops', 'Q-53: tinyfish-cookbook Math.random() examples', 'Q-55: GitNexus eval-server error disclosure (localhost)'],
     cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code'],
