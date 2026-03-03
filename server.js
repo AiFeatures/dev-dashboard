@@ -418,7 +418,7 @@ app.get('/api/backlog', (_req, res) => {
     { id: 'Q-49', severity: 'P3', repo: 'GitNexus', title: 'eval-server no body limit — added 1MB cap with BODY_TOO_LARGE error', status: 'resolved', category: 'security' },
     { id: 'Q-50', severity: 'P3', repo: 'get-shit-done', title: 'RegExp from config file — escaped reqId with escapeRegex()', status: 'resolved', category: 'security' },
     { id: 'Q-51', severity: 'P3', repo: 'CollabCode', title: 'Math.random() for user IDs — replaced with crypto.getRandomValues', status: 'resolved', category: 'security' },
-    { id: 'Q-52', severity: 'P3', repo: 'SlayZone', title: 'TOCTOU in symlink ops — desktop app, deferred', status: 'open', category: 'security' },
+    { id: 'Q-52', severity: 'P3', repo: 'SlayZone', title: 'TOCTOU existsSync+unlinkSync → atomic try-catch ENOENT pattern', status: 'resolved', category: 'security' },
     { id: 'Q-53', severity: 'P3', repo: 'tinyfish-cookbook', title: 'Math.random() in cookbook examples — non-production, deferred', status: 'open', category: 'quality' },
     { id: 'Q-54', severity: 'P3', repo: 'n8n-mcp', title: 'Error message leak on /test-tools endpoint — generic error', status: 'resolved', category: 'security' },
     { id: 'Q-55', severity: 'P3', repo: 'GitNexus', title: 'eval-server error disclosure — replaced with generic error message', status: 'resolved', category: 'security' },
@@ -470,9 +470,9 @@ app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
     totals: { P0: 11, P1: 22, P2: 36, P3: 54, total: 123 },
-    resolved: { P0: 11, P1: 21, P2: 34, P3: 50, total: 116 },
-    remaining: { P0: 0, P1: 1, P2: 2, P3: 4, total: 7 },
-    openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated', 'Q-30: CollabCode Firebase Realtime DB rules world-writable', 'Q-40: SlayZone .then() chains without .catch()', 'Q-41: SlayZone buttons without aria-label', 'Q-44: superpowers execSync string-form', 'Q-52: SlayZone TOCTOU symlink ops', 'Q-53: tinyfish-cookbook Math.random() examples'],
+    resolved: { P0: 11, P1: 21, P2: 34, P3: 51, total: 117 },
+    remaining: { P0: 0, P1: 1, P2: 2, P3: 3, total: 6 },
+    openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated', 'Q-30: CollabCode Firebase Realtime DB rules world-writable', 'Q-40: SlayZone .then() chains without .catch()', 'Q-41: SlayZone buttons without aria-label', 'Q-44: superpowers execSync string-form', 'Q-53: tinyfish-cookbook Math.random() examples'],
     cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'awesome-claude-code', 'GitNexus', 'get-shit-done', 'n8n-mcp'],
     affectedRepos: ['CollabCode', 'n8n-mcp', 'GitNexus', 'get-shit-done', 'SlayZone', 'tinyfish-cookbook', 'superpowers', 'ui-ux-pro-max-skill'],
   });
