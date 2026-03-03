@@ -206,6 +206,20 @@ app.get('/api/backlog', (_req, res) => {
     { id: 'Q-53', severity: 'P3', repo: 'tinyfish-cookbook', title: 'Math.random() in cookbook examples — non-production, deferred', status: 'open', category: 'quality' },
     { id: 'Q-54', severity: 'P3', repo: 'n8n-mcp', title: 'Error message leak on /test-tools endpoint — generic error', status: 'resolved', category: 'security' },
     { id: 'Q-55', severity: 'P3', repo: 'GitNexus', title: 'eval-server error disclosure — localhost-only, deferred', status: 'open', category: 'security' },
+    // Cycle 12
+    { id: 'Q-56', severity: 'P2', repo: 'GitNexus', title: 'SSRF bypass via hostname.endsWith() in proxy — exact match + subdomain check', status: 'resolved', category: 'security' },
+    { id: 'Q-57', severity: 'P2', repo: 'ui-ux-pro-max-skill', title: 'Shell injection via exec() in extract.ts — replaced with execFile()', status: 'resolved', category: 'security' },
+    { id: 'Q-58', severity: 'P2', repo: 'get-shit-done', title: 'Prototype pollution via Object.assign in frontmatter merge — __proto__ filtered', status: 'resolved', category: 'security' },
+    { id: 'Q-59', severity: 'P3', repo: 'get-shit-done', title: 'JSON.parse crash on malformed --fields CLI arg — wrapped in try/catch', status: 'resolved', category: 'quality' },
+    { id: 'Q-60', severity: 'P3', repo: 'CollabCode', title: 'Deprecated url.parse() in serve.js — replaced with new URL()', status: 'resolved', category: 'quality' },
+    { id: 'Q-61', severity: 'P3', repo: 'n8n-mcp', title: 'parseInt without radix in http-server-single-session.ts (PORT, rate limits)', status: 'resolved', category: 'quality' },
+    { id: 'Q-62', severity: 'P3', repo: 'n8n-mcp', title: 'parseInt without radix in http-server.ts, server.ts, fetch-templates.ts', status: 'resolved', category: 'quality' },
+    { id: 'Q-63', severity: 'P3', repo: 'GitNexus', title: 'parseInt without radix in 7 locations across 5 files', status: 'resolved', category: 'quality' },
+    { id: 'Q-64', severity: 'P3', repo: 'CollabCode', title: 'parseInt without radix in track-session.js and interview-notes.js', status: 'resolved', category: 'quality' },
+    { id: 'Q-65', severity: 'P3', repo: 'ui-ux-pro-max-skill', title: 'parseInt without radix in github.ts rate limit header', status: 'resolved', category: 'quality' },
+    { id: 'Q-66', severity: 'P3', repo: 'tinyfish-cookbook', title: 'Empty catch block in search.ts JSON parse — comment added', status: 'resolved', category: 'quality' },
+    { id: 'Q-67', severity: 'P3', repo: 'GitNexus', title: 'Empty catch block in html-viewer.ts mermaid render — console.warn added', status: 'resolved', category: 'quality' },
+    { id: 'Q-68', severity: 'P3', repo: 'get-shit-done', title: 'Empty catch blocks in hooks (4 locations) — comments added', status: 'resolved', category: 'quality' },
   ]);
 });
 
@@ -213,8 +227,8 @@ app.get('/api/backlog', (_req, res) => {
 app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
-    totals: { P0: 11, P1: 22, P2: 23, P3: 29, total: 85 },
-    resolved: { P0: 11, P1: 21, P2: 21, P3: 21, total: 74 },
+    totals: { P0: 11, P1: 22, P2: 26, P3: 39, total: 98 },
+    resolved: { P0: 11, P1: 21, P2: 24, P3: 31, total: 87 },
     remaining: { P0: 0, P1: 1, P2: 2, P3: 8, total: 11 },
     openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated', 'Q-30: CollabCode Firebase Realtime DB rules world-writable', 'Q-40: SlayZone .then() chains without .catch()', 'Q-41: SlayZone buttons without aria-label', 'Q-42: n8n-mcp magic scoring numbers', 'Q-44: superpowers execSync string-form', 'Q-49: GitNexus eval-server no body limit (localhost)', 'Q-50: get-shit-done RegExp from config', 'Q-52: SlayZone TOCTOU symlink ops', 'Q-53: tinyfish-cookbook Math.random() examples', 'Q-55: GitNexus eval-server error disclosure (localhost)'],
     cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code'],
