@@ -178,6 +178,12 @@ app.get('/api/backlog', (_req, res) => {
     { id: 'Q-26', severity: 'P1', repo: 'CollabCode', title: 'CORS upgraded from origin reflection to ALLOWED_ORIGINS env var allowlist (9 endpoints)', status: 'resolved', category: 'security' },
     { id: 'Q-27', severity: 'P2', repo: 'CollabCode', title: 'JWT verify() explicit algorithms: [HS256] enforcement (3 calls)', status: 'resolved', category: 'security' },
     { id: 'Q-28', severity: 'P2', repo: 'CollabCode', title: 'Security headers added to all API endpoints (shared _helpers/security.js)', status: 'resolved', category: 'security' },
+    // Cycle 9 - XSS escaping, path traversal, .env hygiene
+    { id: 'Q-29', severity: 'P1', repo: 'CollabCode', title: 'Stored XSS via user.name in app.js innerHTML — escapeHTML() applied', status: 'resolved', category: 'security' },
+    { id: 'Q-30', severity: 'P1', repo: 'CollabCode', title: 'Firebase Realtime DB rules world-writable (requires Firebase Auth integration)', status: 'open', category: 'security' },
+    { id: 'Q-31', severity: 'P2', repo: 'tinyfish-cookbook', title: 'Tracked .env file removed from scholarship-finder (git rm --cached)', status: 'resolved', category: 'security' },
+    { id: 'Q-32', severity: 'P2', repo: 'claude-code-scheduler', title: '.gitignore missing .env rules — added .env, .env.local, .env.*.local', status: 'resolved', category: 'quality' },
+    { id: 'Q-33', severity: 'P3', repo: 'CollabCode', title: 'Path traversal in dev server serve.js — __dirname guard added', status: 'resolved', category: 'security' },
   ]);
 });
 
@@ -185,10 +191,10 @@ app.get('/api/backlog', (_req, res) => {
 app.get('/api/scan-summary', (_req, res) => {
   res.json({
     lastScan: new Date().toISOString(),
-    totals: { P0: 10, P1: 18, P2: 14, P3: 16, total: 58 },
-    resolved: { P0: 10, P1: 18, P2: 13, P3: 16, total: 57 },
-    remaining: { P0: 0, P1: 0, P2: 1, P3: 0, total: 1 },
-    openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated'],
+    totals: { P0: 10, P1: 20, P2: 16, P3: 17, total: 63 },
+    resolved: { P0: 10, P1: 19, P2: 15, P3: 17, total: 61 },
+    remaining: { P0: 0, P1: 1, P2: 1, P3: 0, total: 2 },
+    openItems: ['P2-1: CollabCode Firebase SDK v3.5.2 (2016) — severely outdated', 'Q-30: CollabCode Firebase Realtime DB rules world-writable'],
     cleanRepos: ['context7', 'jules-action', 'claude-code-scheduler', 'obsidian-skills', 'ui-ux-pro-max-skill', 'awesome-claude-code', 'SlayZone', 'GitNexus', 'n8n-mcp', 'tinyfish-cookbook', 'superpowers', 'get-shit-done'],
     affectedRepos: ['CollabCode'],
   });
