@@ -6,23 +6,29 @@
 <title>Dev Dashboard — 14 Repos</title>
 <style>
   :root {
-    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --bg: #0d1117; --surface: #161b22; --surface-2: #1c2129; --border: #30363d;
     --text: #e6edf3; --text-dim: #8b949e; --accent: #58a6ff;
     --green: #3fb950; --red: #f85149; --yellow: #d29922; --orange: #db6d28;
-    --purple: #bc8cff;
+    --purple: #bc8cff; --cyan: #39d2c0;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
 
-  .header { padding: 20px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
+  .header { padding: 16px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; }
   .header h1 { font-size: 20px; font-weight: 600; }
-  .header .stats { margin-left: auto; display: flex; gap: 16px; font-size: 13px; color: var(--text-dim); }
-  .header .stat-val { color: var(--text); font-weight: 600; font-size: 15px; }
+  .header .sys-info { margin-left: auto; display: flex; gap: 16px; font-size: 12px; color: var(--text-dim); align-items: center; }
+  .header .sys-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border);
+    font-size: 11px; font-variant-numeric: tabular-nums;
+  }
+  .header .sys-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
 
   .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); padding: 0 32px; }
-  .tab { padding: 10px 16px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; font-size: 14px; }
+  .tab { padding: 10px 16px; cursor: pointer; color: var(--text-dim); border-bottom: 2px solid transparent; font-size: 14px; display: flex; align-items: center; gap: 6px; }
   .tab:hover { color: var(--text); }
   .tab.active { color: var(--text); border-bottom-color: var(--accent); }
+  .tab .count { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0 6px; font-size: 11px; }
 
   .content { padding: 24px 32px; }
 
@@ -82,9 +88,50 @@
   .btn.pass { border-color: var(--green); color: var(--green); }
   .btn.fail { border-color: var(--red); color: var(--red); }
 
+  /* Services */
+  .services-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+  .svc-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 20px; position: relative; overflow: hidden;
+  }
+  .svc-card.svc-running { border-color: var(--green); }
+  .svc-card.svc-stopped { border-color: var(--border); }
+  .svc-card .svc-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .svc-card .svc-icon { font-size: 28px; }
+  .svc-card .svc-name { font-size: 16px; font-weight: 600; }
+  .svc-card .svc-desc { font-size: 13px; color: var(--text-dim); margin-bottom: 12px; }
+  .svc-card .svc-status { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .svc-card .svc-status .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .svc-card .svc-status .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .svc-card .svc-status .dot.red { background: var(--red); }
+  .svc-card .svc-status .dot.yellow { background: var(--yellow); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .svc-card .svc-meta { display: flex; gap: 16px; font-size: 12px; color: var(--text-dim); margin-bottom: 14px; }
+  .svc-card .svc-meta span { display: flex; align-items: center; gap: 4px; }
+  .svc-card .svc-actions { display: flex; gap: 8px; }
+  .btn-start { background: #0d281840; border-color: var(--green); color: var(--green); }
+  .btn-start:hover { background: #0d281880; }
+  .btn-stop { background: #3d120040; border-color: var(--red); color: var(--red); }
+  .btn-stop:hover { background: #3d120080; }
+  .btn-open { background: #1c233340; border-color: var(--accent); color: var(--accent); }
+  .btn-open:hover { background: #1c233380; }
+
+  /* Log viewer */
+  .log-viewer {
+    background: #010409; border: 1px solid var(--border); border-radius: 6px;
+    padding: 12px; margin-top: 12px; max-height: 200px; overflow-y: auto;
+    font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; font-size: 11px;
+    line-height: 1.5;
+  }
+  .log-viewer:empty::after { content: 'No logs yet'; color: var(--text-dim); }
+  .log-line { white-space: pre-wrap; word-break: break-all; }
+  .log-line.stdout { color: var(--text-dim); }
+  .log-line.stderr { color: var(--orange); }
+  .log-line.system { color: var(--cyan); font-style: italic; }
+
   /* Backlog */
   .backlog-table { width: 100%; border-collapse: collapse; }
-  .backlog-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  .backlog-table th { text-align: left; padding: 8px 12px; font-size: 12px; color: var(--text-dim); border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg); }
   .backlog-table td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
   .sev-P0 { color: var(--red); font-weight: 600; }
   .sev-P1 { color: var(--orange); font-weight: 600; }
@@ -99,24 +146,28 @@
   .cat-security { background: #3d120050; color: var(--red); border: 1px solid #5c1a0060; }
   .cat-bug { background: #3d1a0050; color: var(--orange); border: 1px solid #5c280060; }
   .cat-quality { background: #2d1b4e50; color: var(--purple); border: 1px solid #4a2d7a60; }
+  .cat-accessibility { background: #0d281850; color: var(--cyan); border: 1px solid #1a473160; }
+  .cat-reliability { background: #1c233350; color: var(--accent); border: 1px solid #2d374860; }
 
   /* Detail panel */
   .detail-overlay {
-    position: fixed; top: 0; right: 0; bottom: 0; width: 480px;
+    position: fixed; top: 0; right: 0; bottom: 0; width: 500px;
     background: var(--surface); border-left: 1px solid var(--border);
     transform: translateX(100%); transition: transform 0.2s; z-index: 100;
     overflow-y: auto; padding: 24px;
   }
   .detail-overlay.open { transform: translateX(0); }
   .detail-overlay h2 { font-size: 18px; margin-bottom: 16px; }
-  .detail-overlay .close { position: absolute; top: 16px; right: 16px; cursor: pointer; color: var(--text-dim); font-size: 20px; }
+  .detail-overlay .close { position: absolute; top: 16px; right: 16px; cursor: pointer; color: var(--text-dim); font-size: 20px; background: none; border: none; }
   .detail-overlay .log-entry { font-size: 12px; font-family: 'SF Mono', monospace; color: var(--text-dim); padding: 4px 0; border-bottom: 1px solid var(--border); }
 
   .loading { text-align: center; padding: 48px; color: var(--text-dim); }
 
   @media (max-width: 768px) {
-    .repo-grid { grid-template-columns: 1fr; }
+    .repo-grid, .services-grid { grid-template-columns: 1fr; }
     .content { padding: 16px; }
+    .header { padding: 12px 16px; flex-wrap: wrap; }
+    .detail-overlay { width: 100%; }
   }
 </style>
 </head>
@@ -124,18 +175,19 @@
 
 <div class="header">
   <h1>⚡ Dev Dashboard</h1>
-  <div class="stats">
-    <div><span class="stat-val" id="totalRepos">14</span> repos</div>
-    <div><span class="stat-val" id="cleanCount">—</span> clean</div>
-    <div><span class="stat-val" id="dirtyCount">—</span> dirty</div>
-    <div><span class="stat-val" id="issueCount">—</span> issues</div>
+  <div class="sys-info">
+    <span class="sys-pill"><span class="dot"></span> <span id="sysUptime">—</span></span>
+    <span class="sys-pill" id="sysNode">—</span>
+    <span class="sys-pill" id="sysMem">—</span>
+    <span class="sys-pill" id="sysLoad">—</span>
   </div>
 </div>
 
 <div class="tabs">
-  <div class="tab active" data-tab="repos">Repositories</div>
+  <div class="tab active" data-tab="repos">Repositories <span class="count" id="repoTabCount">14</span></div>
+  <div class="tab" data-tab="services">Services <span class="count" id="svcTabCount">—</span></div>
   <div class="tab" data-tab="scan">Security Scan</div>
-  <div class="tab" data-tab="backlog">Backlog</div>
+  <div class="tab" data-tab="backlog">Backlog <span class="count" id="backlogTabCount">—</span></div>
 </div>
 
 <div class="content" id="content">
@@ -143,7 +195,7 @@
 </div>
 
 <div class="detail-overlay" id="detailPanel">
-  <span class="close" onclick="closeDetail()">&times;</span>
+  <button class="close" onclick="closeDetail()">&times;</button>
   <h2 id="detailTitle"></h2>
   <div id="detailContent"></div>
 </div>
@@ -152,8 +204,11 @@
 let repos = [];
 let backlog = [];
 let scanSummary = null;
+let services = [];
+let systemInfo = null;
 let activeTab = 'repos';
-let backlogFilter = 'all'; // all, open, resolved, P0, P1, P2, P3
+let backlogFilter = 'all';
+let logPollers = {};
 
 // Tab switching
 document.querySelectorAll('.tab').forEach(tab => {
@@ -169,7 +224,7 @@ async function fetchRepos() {
   try {
     const res = await fetch('/api/repos');
     repos = await res.json();
-    updateStats();
+    document.getElementById('repoTabCount').textContent = repos.length;
     if (activeTab === 'repos') render();
   } catch (e) {
     document.getElementById('content').innerHTML = `<div class="loading">Error loading repos: ${escHtml(e.message)}</div>`;
@@ -180,7 +235,8 @@ async function fetchBacklog() {
   try {
     const res = await fetch('/api/backlog');
     backlog = await res.json();
-    document.getElementById('issueCount').textContent = backlog.filter(b => b.status === 'open').length;
+    const openCount = backlog.filter(b => b.status === 'open').length;
+    document.getElementById('backlogTabCount').textContent = openCount + ' open';
   } catch (e) { /* ignore */ }
 }
 
@@ -191,11 +247,34 @@ async function fetchScanSummary() {
   } catch (e) { /* ignore */ }
 }
 
-function updateStats() {
-  const clean = repos.filter(r => r.status === 'clean').length;
-  const dirty = repos.filter(r => r.status === 'dirty').length;
-  document.getElementById('cleanCount').textContent = clean;
-  document.getElementById('dirtyCount').textContent = dirty;
+async function fetchServices() {
+  try {
+    const res = await fetch('/api/services');
+    services = await res.json();
+    const running = services.filter(s => s.status === 'running').length;
+    document.getElementById('svcTabCount').textContent = running + '/' + services.length;
+    if (activeTab === 'services') render();
+  } catch (e) { /* ignore */ }
+}
+
+async function fetchSystemInfo() {
+  try {
+    const res = await fetch('/api/system');
+    systemInfo = await res.json();
+    updateSystemHeader();
+  } catch (e) { /* ignore */ }
+}
+
+function updateSystemHeader() {
+  if (!systemInfo) return;
+  const s = systemInfo;
+  const h = Math.floor(s.uptime / 3600);
+  const m = Math.floor((s.uptime % 3600) / 60);
+  document.getElementById('sysUptime').textContent = h > 0 ? `${h}h ${m}m` : `${m}m`;
+  document.getElementById('sysNode').textContent = s.nodeVersion;
+  const memMB = Math.round(s.memory.rss / 1048576);
+  document.getElementById('sysMem').textContent = memMB + ' MB';
+  document.getElementById('sysLoad').textContent = 'load ' + s.loadAvg[0].toFixed(1);
 }
 
 function getRepoIssueCount(repoName) {
@@ -206,6 +285,8 @@ function render() {
   const content = document.getElementById('content');
   if (activeTab === 'repos') {
     content.innerHTML = `<div class="repo-grid">${repos.map(renderCard).join('')}</div>`;
+  } else if (activeTab === 'services') {
+    content.innerHTML = renderServices();
   } else if (activeTab === 'scan') {
     content.innerHTML = renderScan();
   } else if (activeTab === 'backlog') {
@@ -251,6 +332,110 @@ function renderCard(repo) {
   `;
 }
 
+// ─── Services Tab ──────────────────────────────────────────────
+
+function renderServices() {
+  if (!services.length) return '<div class="loading">Loading services...</div>';
+  return `<div class="services-grid">${services.map(renderServiceCard).join('')}</div>`;
+}
+
+function renderServiceCard(svc) {
+  const isRunning = svc.status === 'running';
+  const isSelf = svc.selfManaged;
+  const dotClass = isRunning ? 'green' : 'red';
+  const cardClass = isRunning ? 'svc-running' : 'svc-stopped';
+
+  const uptimeStr = isRunning && svc.uptime > 0
+    ? formatUptime(svc.uptime)
+    : '—';
+
+  const actions = isSelf
+    ? `<button class="btn btn-open" onclick="window.open('http://localhost:${svc.port}')">Open :${svc.port}</button>`
+    : isRunning
+    ? `
+      <button class="btn btn-stop" onclick="svcAction('${escHtml(svc.name)}', 'stop')">Stop</button>
+      <button class="btn" onclick="svcAction('${escHtml(svc.name)}', 'restart')">Restart</button>
+      <button class="btn btn-open" onclick="window.open('http://localhost:${svc.port}')">Open :${svc.port}</button>
+      <button class="btn" onclick="toggleLogs('${escHtml(svc.name)}')">Logs</button>
+    `
+    : `
+      <button class="btn btn-start" onclick="svcAction('${escHtml(svc.name)}', 'start')">Start</button>
+    `;
+
+  return `
+    <div class="svc-card ${cardClass}">
+      <div class="svc-header">
+        <span class="svc-icon">${svc.icon || '📦'}</span>
+        <span class="svc-name">${escHtml(svc.displayName)}</span>
+      </div>
+      <div class="svc-desc">${escHtml(svc.description)}</div>
+      <div class="svc-status">
+        <span class="dot ${dotClass}"></span>
+        <span style="font-size:13px;font-weight:500">${isRunning ? 'Running' : 'Stopped'}</span>
+        ${svc.pid ? `<span style="font-size:11px;color:var(--text-dim)">PID ${svc.pid}</span>` : ''}
+      </div>
+      <div class="svc-meta">
+        <span>⏱ ${uptimeStr}</span>
+        <span>🔌 :${svc.port || '—'}</span>
+        ${svc.logLines ? `<span>📋 ${svc.logLines} lines</span>` : ''}
+      </div>
+      <div class="svc-actions">${actions}</div>
+      <div class="log-viewer" id="logs-${escHtml(svc.name)}" style="display:none"></div>
+    </div>
+  `;
+}
+
+async function svcAction(name, action) {
+  try {
+    const res = await fetch(`/api/services/${encodeURIComponent(name)}/${action}`, { method: 'POST' });
+    const data = await res.json();
+    // Refresh services after a short delay
+    setTimeout(fetchServices, 600);
+  } catch (e) {
+    console.error('Service action failed:', e);
+  }
+}
+
+function toggleLogs(name) {
+  const el = document.getElementById('logs-' + name);
+  if (!el) return;
+  const visible = el.style.display !== 'none';
+  el.style.display = visible ? 'none' : 'block';
+
+  if (!visible) {
+    // Start polling logs
+    fetchLogs(name);
+    logPollers[name] = setInterval(() => fetchLogs(name), 2000);
+  } else {
+    // Stop polling
+    clearInterval(logPollers[name]);
+    delete logPollers[name];
+  }
+}
+
+async function fetchLogs(name) {
+  try {
+    const res = await fetch(`/api/services/${encodeURIComponent(name)}/logs`);
+    const data = await res.json();
+    const el = document.getElementById('logs-' + name);
+    if (!el) return;
+    el.innerHTML = (data.logs || []).slice(-100).map(l =>
+      `<div class="log-line ${escHtml(l.stream)}">${new Date(l.ts).toLocaleTimeString()} ${escHtml(l.msg)}</div>`
+    ).join('');
+    el.scrollTop = el.scrollHeight;
+  } catch (e) { /* ignore */ }
+}
+
+function formatUptime(seconds) {
+  if (seconds < 60) return seconds + 's';
+  if (seconds < 3600) return Math.floor(seconds / 60) + 'm ' + (seconds % 60) + 's';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return h + 'h ' + m + 'm';
+}
+
+// ─── Scan Tab ──────────────────────────────────────────────────
+
 function renderScan() {
   if (!scanSummary) return '<div class="loading">Loading scan data...</div>';
   const s = scanSummary;
@@ -277,6 +462,8 @@ function renderScan() {
     ${renderBacklogTable(backlog)}
   `;
 }
+
+// ─── Backlog Tab ───────────────────────────────────────────────
 
 function renderBacklog() {
   const filtered = filterBacklog(backlog);
@@ -309,12 +496,13 @@ function renderBacklogTable(items) {
       <thead><tr><th>ID</th><th>Sev</th><th>Cat</th><th>Repo</th><th>Issue</th><th>Status</th></tr></thead>
       <tbody>
         ${items.map(b => {
-          const catClass = b.category === 'security' ? 'cat-security' : b.category === 'bug' ? 'cat-bug' : 'cat-quality';
+          const cat = b.category || '—';
+          const catClass = cat === 'security' ? 'cat-security' : cat === 'bug' ? 'cat-bug' : cat === 'accessibility' ? 'cat-accessibility' : cat === 'reliability' ? 'cat-reliability' : 'cat-quality';
           return `
           <tr>
             <td>${escHtml(b.id)}</td>
             <td class="sev-${escHtml(b.severity)}">${escHtml(b.severity)}</td>
-            <td><span class="category-badge ${catClass}">${escHtml(b.category || '—')}</span></td>
+            <td><span class="category-badge ${catClass}">${escHtml(cat)}</span></td>
             <td>${escHtml(b.repo)}</td>
             <td>${escHtml(b.title)}</td>
             <td class="status-${escHtml(b.status)}">${escHtml(b.status)}</td>
@@ -324,6 +512,8 @@ function renderBacklogTable(items) {
     </table>
   `;
 }
+
+// ─── Detail Panel & Health Checks ──────────────────────────────
 
 async function runHealth(name, btn) {
   btn.className = 'btn running';
@@ -372,12 +562,16 @@ function escHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// Init
+// ─── Init ──────────────────────────────────────────────────────
+
 fetchRepos();
 fetchBacklog();
 fetchScanSummary();
+fetchServices();
+fetchSystemInfo();
+
 // Auto-refresh every 30s
-setInterval(() => { fetchRepos(); fetchBacklog(); fetchScanSummary(); }, 30000);
+setInterval(() => { fetchRepos(); fetchBacklog(); fetchScanSummary(); fetchServices(); fetchSystemInfo(); }, 30000);
 </script>
 </body>
 </html>

@@ -2,19 +2,22 @@
 # Runs the unified dashboard + monitored services in a single stack.
 #
 # Usage:
-#   docker compose up -d
+#   docker compose up -d                     # Dashboard only
+#   docker compose --profile full up -d      # Dashboard + all services
 #   open http://localhost:7777
 #
 # All 14 repos are bind-mounted read-only from the host.
-# Services that can run as servers (n8n-mcp, CollabCode) are included.
+# Services can also be started/stopped from the dashboard UI at runtime.
 
 services:
   dashboard:
     build: .
     ports:
       - "7777:7777"
+      - "3000:3000"   # n8n-mcp (when started from dashboard)
+      - "8080:8080"   # CollabCode (when started from dashboard)
     volumes:
-      # Mount all repos read-only for git status / health checks
+      # Mount all repos for git status, health checks, and service launching
       - ${HOME}/jules-action:/repos/jules-action:ro
       - ${HOME}/claude-code-scheduler:/repos/claude-code-scheduler:ro
       - ${HOME}/obsidian-skills:/repos/obsidian-skills:ro
@@ -33,28 +36,3 @@ services:
       - REPOS_ROOT=/repos
       - DASHBOARD_PORT=7777
     restart: unless-stopped
-    depends_on:
-      - n8n-mcp
-
-  n8n-mcp:
-    build:
-      context: ${HOME}/n8n-mcp
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-    restart: unless-stopped
-
-  collabcode:
-    build:
-      context: ${HOME}/CollabCode
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    environment:
-      - PORT=8080
-    restart: unless-stopped
-    profiles:
-      - full  # Only starts with: docker compose --profile full up

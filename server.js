@@ -1,7 +1,8 @@
 const express = require('express');
-const { execFile } = require('child_process');
-const path = require('path');
-const os = require('os');
+const { execFile, spawn } = require('node:child_process');
+const path = require('node:path');
+const os = require('node:os');
+const fs = require('node:fs');
 
 const app = express();
 const PORT = process.env.DASHBOARD_PORT || 7777;
@@ -24,6 +25,42 @@ const REPOS = [
   { name: 'CollabCode', owner: 'humancto', tech: 'JS/Express', description: 'Real-time collaborative code editor', healthCmd: null, port: 8080 },
 ];
 
+// Runnable services — apps that can be started from the dashboard
+const SERVICES = [
+  {
+    name: 'n8n-mcp',
+    displayName: 'n8n MCP Server',
+    description: 'MCP server for n8n node documentation & validation',
+    port: 3000,
+    startCmd: { cmd: 'node', args: ['dist/mcp/index.js'], env: { PORT: '3000', NODE_ENV: 'production' } },
+    healthUrl: 'http://localhost:3000',
+    icon: '🔌',
+  },
+  {
+    name: 'CollabCode',
+    displayName: 'CollabCode Editor',
+    description: 'Real-time collaborative code editor with Firebase',
+    port: 8080,
+    startCmd: { cmd: 'node', args: ['serve.js'], env: { PORT: '8080' } },
+    healthUrl: 'http://localhost:8080',
+    icon: '📝',
+  },
+  {
+    name: 'dev-dashboard',
+    displayName: 'Dev Dashboard',
+    description: 'This dashboard (self-reference for container mode)',
+    port: 7777,
+    startCmd: null, // managed externally
+    healthUrl: `http://localhost:${process.env.DASHBOARD_PORT || 7777}/api/repos`,
+    icon: '⚡',
+    selfManaged: true,
+  },
+];
+
+// In-memory process tracker
+const runningProcesses = new Map(); // service name → { proc, logs, startedAt, pid }
+const MAX_LOG_LINES = 500;
+
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
@@ -36,6 +73,185 @@ function gitCmd(repoPath, args) {
     });
   });
 }
+
+// ─── Service Management API ───────────────────────────────────────
+
+// GET /api/services — list all services with status
+app.get('/api/services', async (_req, res) => {
+  const results = SERVICES.map((svc) => {
+    const proc = runningProcesses.get(svc.name);
+    return {
+      ...svc,
+      status: svc.selfManaged ? 'running' : proc ? 'running' : 'stopped',
+      pid: proc?.pid || null,
+      startedAt: proc?.startedAt || null,
+      uptime: proc ? Math.floor((Date.now() - proc.startedAt) / 1000) : 0,
+      logLines: proc ? proc.logs.length : 0,
+    };
+  });
+  res.json(results);
+});
+
+// POST /api/services/:name/start — start a service
+app.post('/api/services/:name/start', (req, res) => {
+  const svc = SERVICES.find((s) => s.name === req.params.name);
+  if (!svc) return res.status(404).json({ error: 'Service not found' });
+  if (svc.selfManaged) return res.json({ status: 'running', message: 'Self-managed service' });
+  if (runningProcesses.has(svc.name)) return res.json({ status: 'already-running', pid: runningProcesses.get(svc.name).pid });
+
+  const cwd = path.join(REPOS_ROOT, svc.name);
+  if (!fs.existsSync(cwd)) return res.status(400).json({ error: `Directory not found: ${cwd}` });
+
+  const env = { ...process.env, ...svc.startCmd.env };
+  const proc = spawn(svc.startCmd.cmd, svc.startCmd.args, {
+    cwd,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  const entry = { proc, logs: [], startedAt: Date.now(), pid: proc.pid };
+
+  proc.stdout.on('data', (chunk) => {
+    const lines = chunk.toString().split('\n').filter(Boolean);
+    entry.logs.push(...lines.map((l) => ({ ts: Date.now(), stream: 'stdout', msg: l })));
+    if (entry.logs.length > MAX_LOG_LINES) entry.logs.splice(0, entry.logs.length - MAX_LOG_LINES);
+  });
+
+  proc.stderr.on('data', (chunk) => {
+    const lines = chunk.toString().split('\n').filter(Boolean);
+    entry.logs.push(...lines.map((l) => ({ ts: Date.now(), stream: 'stderr', msg: l })));
+    if (entry.logs.length > MAX_LOG_LINES) entry.logs.splice(0, entry.logs.length - MAX_LOG_LINES);
+  });
+
+  proc.on('close', (code) => {
+    entry.logs.push({ ts: Date.now(), stream: 'system', msg: `Process exited with code ${code}` });
+    runningProcesses.delete(svc.name);
+  });
+
+  proc.on('error', (err) => {
+    entry.logs.push({ ts: Date.now(), stream: 'system', msg: `Process error: ${err.message}` });
+    runningProcesses.delete(svc.name);
+  });
+
+  runningProcesses.set(svc.name, entry);
+  res.json({ status: 'started', pid: proc.pid });
+});
+
+// POST /api/services/:name/stop — stop a service
+app.post('/api/services/:name/stop', (req, res) => {
+  const svc = SERVICES.find((s) => s.name === req.params.name);
+  if (!svc) return res.status(404).json({ error: 'Service not found' });
+  if (svc.selfManaged) return res.status(400).json({ error: 'Cannot stop self-managed service' });
+
+  const entry = runningProcesses.get(svc.name);
+  if (!entry) return res.json({ status: 'not-running' });
+
+  entry.proc.kill('SIGTERM');
+  // Force kill after 5s if still running
+  setTimeout(() => {
+    try { entry.proc.kill('SIGKILL'); } catch { /* already dead */ }
+  }, 5000);
+
+  res.json({ status: 'stopping', pid: entry.pid });
+});
+
+// POST /api/services/:name/restart — restart a service
+app.post('/api/services/:name/restart', async (req, res) => {
+  const svc = SERVICES.find((s) => s.name === req.params.name);
+  if (!svc) return res.status(404).json({ error: 'Service not found' });
+  if (svc.selfManaged) return res.status(400).json({ error: 'Cannot restart self-managed service' });
+
+  // Stop if running
+  const entry = runningProcesses.get(svc.name);
+  if (entry) {
+    entry.proc.kill('SIGTERM');
+    await new Promise((resolve) => entry.proc.on('close', resolve));
+  }
+
+  // Re-dispatch to start
+  req.params.name = svc.name;
+  // Small delay to let port release
+  setTimeout(() => {
+    const startReq = { params: { name: svc.name } };
+    const cwd = path.join(REPOS_ROOT, svc.name);
+    if (!fs.existsSync(cwd)) return res.json({ status: 'error', error: 'Directory not found' });
+
+    const env = { ...process.env, ...svc.startCmd.env };
+    const proc = spawn(svc.startCmd.cmd, svc.startCmd.args, {
+      cwd,
+      env,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+
+    const newEntry = { proc, logs: [], startedAt: Date.now(), pid: proc.pid };
+    proc.stdout.on('data', (chunk) => {
+      const lines = chunk.toString().split('\n').filter(Boolean);
+      newEntry.logs.push(...lines.map((l) => ({ ts: Date.now(), stream: 'stdout', msg: l })));
+      if (newEntry.logs.length > MAX_LOG_LINES) newEntry.logs.splice(0, newEntry.logs.length - MAX_LOG_LINES);
+    });
+    proc.stderr.on('data', (chunk) => {
+      const lines = chunk.toString().split('\n').filter(Boolean);
+      newEntry.logs.push(...lines.map((l) => ({ ts: Date.now(), stream: 'stderr', msg: l })));
+      if (newEntry.logs.length > MAX_LOG_LINES) newEntry.logs.splice(0, newEntry.logs.length - MAX_LOG_LINES);
+    });
+    proc.on('close', (code) => {
+      newEntry.logs.push({ ts: Date.now(), stream: 'system', msg: `Process exited with code ${code}` });
+      runningProcesses.delete(svc.name);
+    });
+    proc.on('error', (err) => {
+      newEntry.logs.push({ ts: Date.now(), stream: 'system', msg: `Process error: ${err.message}` });
+      runningProcesses.delete(svc.name);
+    });
+
+    runningProcesses.set(svc.name, newEntry);
+    res.json({ status: 'restarted', pid: proc.pid });
+  }, 500);
+});
+
+// GET /api/services/:name/logs — get recent logs for a service
+app.get('/api/services/:name/logs', (req, res) => {
+  const svc = SERVICES.find((s) => s.name === req.params.name);
+  if (!svc) return res.status(404).json({ error: 'Service not found' });
+
+  const entry = runningProcesses.get(svc.name);
+  if (!entry) return res.json({ logs: [], status: 'not-running' });
+
+  const since = parseInt(req.query.since, 10) || 0;
+  const logs = entry.logs.filter((l) => l.ts > since);
+  res.json({ logs, status: 'running', pid: entry.pid });
+});
+
+// GET /api/system — system info for header stats
+app.get('/api/system', (_req, res) => {
+  const uptime = process.uptime();
+  const mem = process.memoryUsage();
+  const load = os.loadavg();
+  res.json({
+    uptime: Math.floor(uptime),
+    memory: { rss: mem.rss, heapUsed: mem.heapUsed, heapTotal: mem.heapTotal },
+    loadAvg: load,
+    platform: os.platform(),
+    nodeVersion: process.version,
+    cpus: os.cpus().length,
+    hostname: os.hostname(),
+    totalMemory: os.totalmem(),
+    freeMemory: os.freemem(),
+  });
+});
+
+// Graceful shutdown — kill child processes
+process.on('SIGTERM', () => {
+  for (const [name, entry] of runningProcesses) {
+    try { entry.proc.kill('SIGTERM'); } catch { /* ignore */ }
+  }
+  process.exit(0);
+});
+process.on('SIGINT', () => {
+  for (const [name, entry] of runningProcesses) {
+    try { entry.proc.kill('SIGTERM'); } catch { /* ignore */ }
+  }
+  process.exit(0);
+});
 
 // GET /api/repos - list all repos with git status
 app.get('/api/repos', async (_req, res) => {
